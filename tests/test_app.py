@@ -1,12 +1,15 @@
 import base64
 import hashlib
 import hmac
+from datetime import datetime, timedelta, timezone
 
 import pytest
 from fastapi.testclient import TestClient
+from sqlmodel import Session
 
 from app import db
 from app.main import app
+from app.models import Hook
 
 
 @pytest.fixture
@@ -93,4 +96,28 @@ def test_replay_unreachable_target(client):
 def test_keepalive(client):
     assert client.get("/api/cron/keepalive").status_code == 401
     r = client.get("/api/cron/keepalive", headers={"Authorization": "Bearer cron"})
-    assert r.json() == {"ok": True}
+    assert r.json() == {"ok": True, "deleted": 0}
+
+
+def _backdate(hook_id: int, days: int) -> None:
+    with Session(db.get_engine()) as session:
+        hook = session.get(Hook, hook_id)
+        hook.received_at = datetime.now(timezone.utc) - timedelta(days=days)
+        session.add(hook)
+        session.commit()
+
+
+def test_keepalive_retention(client, monkeypatch):
+    old = client.post("/hook/maya", json={"a": 1}).json()["id"]
+    fresh = client.post("/hook/maya", json={"a": 2}).json()["id"]
+    _backdate(old, 31)
+    _backdate(fresh, 29)
+    cron = {"Authorization": "Bearer cron"}
+
+    monkeypatch.setenv("RETENTION_DAYS", "0")
+    assert client.get("/api/cron/keepalive", headers=cron).json()["deleted"] == 0
+
+    monkeypatch.delenv("RETENTION_DAYS")
+    assert client.get("/api/cron/keepalive", headers=cron).json()["deleted"] == 1
+    ids = [h["id"] for h in client.get("/api/hooks", auth=AUTH).json()]
+    assert ids == [fresh]

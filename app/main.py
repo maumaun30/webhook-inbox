@@ -3,6 +3,7 @@ import json
 import os
 import re
 import time
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import httpx
@@ -10,7 +11,7 @@ from fastapi import Depends, FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel, HttpUrl
-from sqlalchemy import text
+from sqlalchemy import delete
 from sqlmodel import Session, col, or_, select
 
 from app.auth import require_admin
@@ -136,12 +137,20 @@ def healthz():
 
 @app.get("/api/cron/keepalive")
 def keepalive(request: Request, session: Session = Depends(get_session)):
-    """Hit by Vercel Cron so the Supabase free project never goes idle for a week."""
+    """Hit by Vercel Cron so the Supabase free project never goes idle for a week.
+
+    Also enforces retention: deletes hooks older than RETENTION_DAYS (default 30, 0 = keep all).
+    """
     secret = os.getenv("CRON_SECRET")
     if not secret or request.headers.get("authorization") != f"Bearer {secret}":
         raise HTTPException(401, "Unauthorized")
-    session.exec(text("SELECT 1"))
-    return {"ok": True}
+    days = int(os.getenv("RETENTION_DAYS", "30"))
+    deleted = 0
+    if days > 0:
+        cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+        deleted = session.exec(delete(Hook).where(col(Hook.received_at) < cutoff)).rowcount
+    session.commit()
+    return {"ok": True, "deleted": deleted}
 
 
 # ---------- JSON API (admin) ----------

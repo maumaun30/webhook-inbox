@@ -17,7 +17,8 @@ Deploy target: Vercel (Python runtime, `tool.vercel.entrypoint = "app.main:app"`
 - `app/signatures.py` — Shopify, HubSpot v3, generic hex HMAC; secret per source via `SECRET_<SOURCE>`
 - `app/auth.py` — HTTP Basic, password = `ADMIN_TOKEN`; open locally if unset, 503 on Vercel
 - `scripts/replay_local.py` — pull a hook from the deployed inbox, send to localhost
-- `vercel.json` — cron hits keepalive every 3 days (Supabase pauses free projects after 1 week idle)
+- `vercel.json` — cron hits keepalive every 3 days (Supabase pauses free projects after 1 week idle);
+  keepalive also deletes hooks older than `RETENTION_DAYS` (default 30, 0 = off)
 
 ## Commands
 ```bash
@@ -34,7 +35,7 @@ pytest
 
 ## Status
 - Done: capture, list/search/filter, detail, replay (API, dashboard, local script), delete,
-  signature checks, auth, keepalive cron. 10 tests pass.
+  signature checks, auth, keepalive cron with retention. 11 tests pass.
 - Deployed: https://webhook-inbox-opal.vercel.app (Vercel project `webhook-inbox`, region `sin1`,
   GitHub-connected: push to `main` deploys prod). DB: Supabase project `webhook-inbox`
   (ref `wxlywphdnmcpdvikudpj`, ap-southeast-1, pooler host `aws-0-ap-southeast-1`).
@@ -44,5 +45,4 @@ pytest
 ## Next steps (suggested)
 1. Set `SECRET_<SOURCE>` env vars in Vercel for sources that sign payloads; point providers at
    `/hook/<source>`.
-2. Retention: delete hooks older than N days (run from the keepalive cron) to stay under 500 MB.
-3. Optional: Telegram/email alert on `invalid` signatures; per-source "auto-forward to URL".
+2. Optional: Telegram/email alert on `invalid` signatures; per-source "auto-forward to URL".

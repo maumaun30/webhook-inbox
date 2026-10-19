@@ -13,7 +13,7 @@ FastAPI · SQLModel · Postgres (Supabase) · deploys to Vercel.
 | `GET /api/hooks/{id}` | admin | Full payload |
 | `POST /api/hooks/{id}/replay` `{"target_url": "..."}` | admin | Re-send with same method, headers, body |
 | `DELETE /api/hooks/{id}` | admin | Delete |
-| `GET /api/cron/keepalive` | `CRON_SECRET` | Keeps the Supabase free project from pausing |
+| `GET /api/cron/keepalive` | `CRON_SECRET` | Keeps Supabase awake; deletes hooks older than `RETENTION_DAYS` (default 30, `0` = keep all) |
 
 Admin = HTTP Basic, any username, password = `ADMIN_TOKEN`.
 
