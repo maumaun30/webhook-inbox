@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}#{{ hook.id }} · Webhook Inbox{% endblock %}
+{% block content %}
+<p>
+  <strong>#{{ hook.id }}</strong> · {{ hook.source }} · {{ hook.method }} ·
+  <span class="{{ hook.signature_status }}">signature {{ hook.signature_status }}</span> ·
+  <span class="muted">{{ hook.received_at.strftime("%Y-%m-%d %H:%M:%S") }} UTC · from {{ hook.ip or "?" }}</span>
+</p>
+<p class="muted">{{ hook.url }}</p>
+
+<h2>Replay</h2>
+<form class="inline" method="post" action="/h/{{ hook.id }}/replay">
+  <input name="target_url" value="{{ target }}" placeholder="https://staging.example.com/webhooks/shopify" style="flex:1;min-width:260px" required>
+  <button type="submit">Send</button>
+</form>
+{% if result %}
+  {% if result.error %}
+    <pre class="invalid">{{ result.error }}</pre>
+  {% else %}
+    <p class="{{ 'valid' if result.ok else 'invalid' }}">HTTP {{ result.status }} · {{ result.elapsed_ms }} ms</p>
+    <pre>{{ result.response }}</pre>
+  {% endif %}
+{% endif %}
+
+<div class="grid">
+  <div><h2>Body</h2><pre>{{ pretty }}</pre></div>
+  <div><h2>Headers</h2><pre>{% for k, v in hook.headers|dictsort %}{{ k }}: {{ v }}
+{% endfor %}</pre></div>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block content %}
+<form class="inline" method="get" action="/">
+  <select name="source">
+    <option value="">All sources</option>
+    {% for s in sources %}<option value="{{ s }}" {% if s == source %}selected{% endif %}>{{ s }}</option>{% endfor %}
+  </select>
+  <input name="q" value="{{ q }}" placeholder="Search body or URL">
+  <button type="submit">Filter</button>
+</form>
+
+{% if hooks %}
+<div class="wrap"><table>
+  <tr><th>#</th><th>Source</th><th>Method</th><th>Signature</th><th>Type</th><th>Size</th><th>Received (UTC)</th></tr>
+  {% for h in hooks %}
+  <tr>
+    <td><a href="/h/{{ h.id }}">{{ h.id }}</a></td>
+    <td>{{ h.source }}</td>
+    <td>{{ h.method }}</td>
+    <td class="{{ h.signature_status }}">{{ h.signature_status }}</td>
+    <td class="muted">{{ (h.content_type or "")[:40] }}</td>
+    <td class="muted">{{ h.body|length }} B</td>
+    <td class="muted">{{ h.received_at.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+  </tr>
+  {% endfor %}
+</table></div>
+{% else %}
+<p class="muted">Nothing captured yet. Point a webhook at <code>/hook/&lt;source&gt;</code>, e.g. <code>/hook/shopify</code>.</p>
+{% endif %}
+{% endblock %}
