@@ -34,13 +34,15 @@ pytest
 
 ## Status
 - Done: capture, list/search/filter, detail, replay (API, dashboard, local script), delete,
-  signature checks, auth, keepalive cron. 10 tests pass; verified against Postgres 16 and a
-  live replay round-trip.
-- Not yet done: first real Vercel + Supabase deploy (untested in production).
+  signature checks, auth, keepalive cron. 10 tests pass.
+- Deployed: https://webhook-inbox-opal.vercel.app (Vercel project `webhook-inbox`, region `sin1`,
+  GitHub-connected: push to `main` deploys prod). DB: Supabase project `webhook-inbox`
+  (ref `wxlywphdnmcpdvikudpj`, ap-southeast-1, pooler host `aws-0-ap-southeast-1`).
+  Smoke-tested 2026-10-19: capture, auth, dashboard, replay, cron keepalive.
+- Keep Vercel region next to Supabase region; cross-region adds ~seconds per request.
 
 ## Next steps (suggested)
-1. Push to GitHub, deploy to Vercel, set `DATABASE_URL` (Supabase transaction pooler, port 6543),
-   `ADMIN_TOKEN`, `CRON_SECRET`.
-2. Smoke test on production: capture, dashboard, replay, cron keepalive.
-3. Retention: delete hooks older than N days (run from the keepalive cron) to stay under 500 MB.
-4. Optional: Telegram/email alert on `invalid` signatures; per-source "auto-forward to URL".
+1. Set `SECRET_<SOURCE>` env vars in Vercel for sources that sign payloads; point providers at
+   `/hook/<source>`.
+2. Retention: delete hooks older than N days (run from the keepalive cron) to stay under 500 MB.
+3. Optional: Telegram/email alert on `invalid` signatures; per-source "auto-forward to URL".

@@ -5,3 +5,6 @@ __pycache__/
 local.db
 .vercel
 .pytest_cache/
+.env*
+*.egg-info/
+.DS_Store
